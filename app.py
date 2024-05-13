@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 from telebot import *
 
 searchTag = ""
+need_search = False
 bot = telebot.TeleBot('6719735019:AAGCG74MlehHuIWp4Y9C9IEDoFQ9LQURu7A')
 urlJoke = 'http://anekdotme.ru/random'
 urlFact = 'https://pikabu.ru/community/interesting'
@@ -118,12 +119,14 @@ def response(function_call):
 # Получение сообщений от юзера
 @bot.message_handler(commands=['Search'])
 def handle_joke(message):
-    bot.send_message(message.chat.id, "Пошел искать значение слова. Минутку, пожалуйста")
-    bot.send_message(message.chat.id, getwiki(message.text.replace("/Search", "")))
+    searchText = message.text.replace("/Search", "")
+    if searchText != "":
+        bot.send_message(message.chat.id, "Пошел искать значение слова. Минутку, пожалуйста")
+        bot.send_message(message.chat.id, getwiki(message.text.replace("/Search", "")))
 
 @bot.message_handler(content_types=["text"])
 def handle_text(message):
-
+        
     if message.text.strip() == "Расскажи мне анекдот":
         second_mess = "Виду поиск анекдота. Минутку, пожалуйста"
         bot.send_message(message.chat.id, second_mess)
@@ -148,6 +151,8 @@ def handle_text(message):
     elif message.text.strip() == "Хочу унать значение слова":
         second_mess = "Отправь мне любое слово, и я расскажу тебе его значение. Для этого введи команду /Search, а после неё напишие искомое слово (в одной строке)"
         bot.send_message(message.chat.id, second_mess)
+        global need_search
+        need_search = True
 
     elif message.text.strip() == "Давай просто поболтаем":
         second_mess = "Перейти на страницу личного блога Екатерины Эдуардовны?"
@@ -156,10 +161,15 @@ def handle_text(message):
         bot.send_message(message.chat.id, second_mess, reply_markup=markup)
         
     else:
-        second_mess = "Перейти на страницу личного блога Екатерины Эдуардовны?"
-        markup = types.InlineKeyboardMarkup()
-        markup.add(types.InlineKeyboardButton("Перейти на страницу", url="https://t.me/KaterinaPakhomovaa"))
-        bot.send_message(message.chat.id, second_mess, reply_markup=markup)
+        if need_search == False:
+            second_mess = "Перейти на страницу личного блога Екатерины Эдуардовны?"
+            markup = types.InlineKeyboardMarkup()
+            markup.add(types.InlineKeyboardButton("Перейти на страницу", url="https://t.me/KaterinaPakhomovaa"))
+            bot.send_message(message.chat.id, second_mess, reply_markup=markup)
+        
+        else:
+            bot.send_message(message.chat.id, "Пошел искать значение слова. Минутку, пожалуйста")
+            bot.send_message(message.chat.id, getwiki(message.text))
 
 # Устанавливаем русский язык в Wikipedia
 wikipedia.set_lang("ru")
@@ -167,6 +177,9 @@ wikipedia.set_lang("ru")
 # Чистим текст статьи в Wikipedia и ограничиваем его тысячей символов
 def getwiki(s):
     try:
+        global need_search
+        need_search = False
+        
         ny = wikipedia.page(s)
         # Получаем первую тысячу символов
         wikitext=ny.content[:1000]
